@@ -1,13 +1,14 @@
 // https://uibakery.io/regex-library/phone-number
 import { Form, redirect, useActionData, useNavigation } from "react-router-dom";
 import { createOrder } from "../../services/apiRestaurant";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { clearCart, getCart, getTotalCartPrice } from "../cart/cartSlice";
 import { formatCurrency } from "../../utils/helpers";
 import { useState } from "react";
 import Button from "../../ui/Button";
-import EmptyCart from '../cart/EmptyCart';
-import store from '../../store';
+import EmptyCart from "../cart/EmptyCart";
+import store from "../../store";
+import { fetchAddress } from "../user/userSlice";
 
 const isValidPhone = (str) =>
   /^\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9}$/.test(
@@ -16,17 +17,25 @@ const isValidPhone = (str) =>
 
 function CreateOrder() {
   const [withPriority, setWithPriority] = useState(false);
-  const username = useSelector((store) => store.user.username);
+  const {
+    username,
+    status,
+    position,
+    address,
+    error: errorMessage,
+  } = useSelector((store) => store.user);
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
   const formErrors = useActionData(); // gt some errors for display
-
+  const dispatch = useDispatch();
   const cart = useSelector(getCart);
   const totalCartPrice = useSelector(getTotalCartPrice);
   const priorityPrice = withPriority ? totalCartPrice * 0.2 : 0;
-  const totalPrice = totalCartPrice +  priorityPrice;
-  
-  if(!cart.length) return <EmptyCart />
+  const totalPrice = totalCartPrice + priorityPrice;
+
+  const isLoadingAddress = status === "loading";
+
+  if (!cart.length) return <EmptyCart />;
 
   return (
     <div className="px-4 py-6">
@@ -59,14 +68,37 @@ function CreateOrder() {
 
         <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center">
           <label className="sm:basis-40">Address</label>
-          <div className="grow">
+          <div className="relative grow">
             <input
               className="input w-full"
               type="text"
               name="address"
+              disabled={isLoadingAddress}
+              defaultValue={address}
               required
             />
+
+            {status === "error" && (
+              <p className="mt-2 rounded-md bg-red-100 text-center text-xs text-red-700">
+                {errorMessage}
+              </p>
+            )}
           </div>
+
+          {!position.latitude && !position.longitude && (
+            <span className="absolute right-[3px]">
+              <Button
+                type="small"
+                onClick={(e) => {
+                  e.preventDefault();
+                  dispatch(fetchAddress());
+                }}
+                disabled={isLoadingAddress}
+              >
+                Get Position
+              </Button>
+            </span>
+          )}
         </div>
 
         <div className="mb-12 flex items-center gap-5">
@@ -85,8 +117,15 @@ function CreateOrder() {
 
         <div>
           <input type="hidden" name="cart" value={JSON.stringify(cart)} />
-          <Button disabled={isSubmitting} type="primary">
-            {isSubmitting ? "Placing order..." : `Order now for ${formatCurrency(totalPrice)}`}
+          <input
+            type="hidden"
+            name="position"
+            value={position.longitude && position.latitude ? `${position.latitude},${position.longitude}` : ""}
+          />
+          <Button disabled={isSubmitting || isLoadingAddress} type="primary">
+            {isSubmitting
+              ? "Placing order..."
+              : `Order now for ${formatCurrency(totalPrice)}`}
           </Button>
         </div>
       </Form>
@@ -112,7 +151,7 @@ export async function action({ request }) {
   if (Object.keys(errors).length > 0) return errors;
 
   const newOrder = await createOrder(order);
-  //import store to access dispatch 
+  //import store to access dispatch
   store.dispatch(clearCart());
   return redirect(`/order/${newOrder.id}`);
 }
