@@ -9,6 +9,7 @@ function Button({ children, disabled, to, type, onClick }) {
     secondary:
       "inline-block text-sm cursor-pointer rounded-full border-2 border-stone-300 font-semibold tracking-wide text-stone-400 transition-colors duration-300 hover:bg-stone-400 focus:ring hover:text-stone-800 focus:ring-stone-200 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed uppercase px-4 py-2.5 md:px-6 md:py-3.5",
     small: base + " px-4 py-2 md:px-6 md:py-2.5 text-xs",
+    round : base + " px-2.5 py-1 md:px-3.5 md:py-2 text-sm",
   };
 
   if (to)
