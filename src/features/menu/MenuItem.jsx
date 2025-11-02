@@ -1,6 +1,5 @@
 import { formatCurrency } from "../../utils/helpers";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
 import { addItem, getCurrentQuantityById } from "../cart/cartSlice";
 import Button from "../../ui/Button";
 import DeleteItem from "../cart/DeleteItem";
@@ -8,7 +7,6 @@ import UpdateItemQuantity from "../cart/UpdateItemQuantity";
 
 function MenuItem({ pizza }) {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
   const { id , name, unitPrice, ingredients, soldOut, imageUrl } = pizza;
   const currentQuantity = useSelector(getCurrentQuantityById(id));
   const isInCart = currentQuantity > 0;
@@ -22,7 +20,6 @@ function MenuItem({ pizza }) {
       totalPrice : unitPrice*1,
     };
     dispatch(addItem(newItem));
-    navigate('/cart');
   }
 
   return (
